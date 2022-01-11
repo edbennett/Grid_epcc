@@ -82,11 +82,11 @@ public:
       arg = GridCmdOptionPayload(argv, argv + argc, "--StartingType");
 
       if (arg != "HotStart" && arg != "ColdStart" && arg != "TepidStart" &&
-          arg != "CheckpointStart") {
+          arg != "CheckpointStart" && arg != "CheckpointStartWithReseed") {
         std::cout << GridLogError << "Unrecognized option in --StartingType\n";
         std::cout
 	  << GridLogError
-	  << "Valid [HotStart, ColdStart, TepidStart, CheckpointStart]\n";
+	  << "Valid [HotStart, ColdStart, TepidStart, CheckpointStart, CheckpointStartWithReseed]\n";
         exit(1);
       }
       Parameters.StartingType = arg;
@@ -159,12 +159,19 @@ private:
       Resources.GetCheckPointer()->CheckpointRestore(Parameters.StartTrajectory, U,
 						     Resources.GetSerialRNG(),
 						     Resources.GetParallelRNG());
+    } else if (Parameters.StartingType == "CheckpointStartWithReseed") {
+      // CheckpointRestart
+      Resources.GetCheckPointer()->CheckpointRestore(Parameters.StartTrajectory, U,
+						     Resources.GetSerialRNG(),
+						     Resources.GetParallelRNG());
+      // Reseed
+      Resources.SeedFixedIntegers();
     } else {
       // others
       std::cout << GridLogError << "Unrecognized StartingType\n";
       std::cout
 	<< GridLogError
-	<< "Valid [HotStart, ColdStart, TepidStart, CheckpointStart]\n";
+	<< "Valid [HotStart, ColdStart, TepidStart, CheckpointStart, CheckpointStartWithReseed]\n";
       exit(1);
     }
 
