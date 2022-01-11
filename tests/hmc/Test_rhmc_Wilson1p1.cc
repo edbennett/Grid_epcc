@@ -1,48 +1,76 @@
-    /*************************************************************************************
-
-    Grid physics library, www.github.com/paboyle/Grid 
-
-    Source file: ./tests/Test_rhmc_Wilson1p1.cc
-
-    Copyright (C) 2015
-
-Author: Peter Boyle <paboyle@ph.ed.ac.uk>
-Author: paboyle <paboyle@ph.ed.ac.uk>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License along
-    with this program; if not, write to the Free Software Foundation, Inc.,
-    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
-    See the full license in the file "LICENSE" in the top level distribution directory
-    *************************************************************************************/
-    /*  END LEGAL */
+#include <string>
 #include <Grid/Grid.h>
 
+
+struct hmc_params {
+  int save_freq;
+  double beta;
+  double m;
+  double tlen;
+  int nsteps;
+  std::string serial_seed = "1 2 3 4 5";
+  std::string parallel_seed = "6 7 8 9 10";
+};
+
+hmc_params ReadCommandLineHMC(int argc, char** argv) {
+  hmc_params HMCParams;
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--savefreq")) {
+    HMCParams.save_freq = std::stoi(Grid::GridCmdOptionPayload(argv, argv + argc, "--savefreq"));
+  } else {
+    std::cout << Grid::GridLogError << "--savefreq must be specified" << std::endl;
+    exit(1);
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--beta")) {
+    HMCParams.beta = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--beta"));
+  } else {
+    std::cout << Grid::GridLogError << "--beta must be specified" << std::endl;
+    exit(1);
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--fermionmass")) {
+    HMCParams.m = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--fermionmass"));
+  } else {
+    std::cout << Grid::GridLogError << "--fermionmass must be specified" << std::endl;
+    exit(1);
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--tlen")) {
+    HMCParams.tlen = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--tlen"));
+  } else {
+    std::cout << Grid::GridLogError << "--tlen must be specified" << std::endl;
+    exit(1);
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--nsteps")) {
+    HMCParams.nsteps = std::stoi(Grid::GridCmdOptionPayload(argv, argv + argc, "--nsteps"));
+  } else {
+    std::cout << Grid::GridLogError << "--nsteps must be specified" << std::endl;
+    exit(1);
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--serialseed")) {
+    HMCParams.serial_seed = Grid::GridCmdOptionPayload(argv, argv + argc, "--serialseed");
+  }
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--parallelseed")) {
+    HMCParams.parallel_seed = Grid::GridCmdOptionPayload(argv, argv + argc, "--parallelseed");
+  }
+  return HMCParams;
+}
 
 
 int main(int argc, char **argv) {
   using namespace Grid;
-   ;
+  hmc_params HMCParams = ReadCommandLineHMC(argc, argv);
+
+  // Here change the allowed (higher) representations
+  typedef Representations< FundamentalRepresentation, AdjointRepresentation > TheRepresentations;
 
   Grid_init(&argc, &argv);
   int threads = GridThread::GetThreads();
   // here make a routine to print all the relevant information on the run
   std::cout << GridLogMessage << "Grid is setup to use " << threads << " threads" << std::endl;
 
-   // Typedefs to simplify notation
-  typedef GenericHMCRunner<MinimumNorm2> HMCWrapper;  // Uses the default minimum norm
-  typedef WilsonImplR FermionImplPolicy;
-  typedef WilsonFermionR FermionAction;
+  // Typedefs to simplify notation
+  typedef HMCWrapperTemplate<PeriodicGimplD, MinimumNorm2, TheRepresentations> HMCWrapper; // Try to get double precision here too??
+  // typedef GenericHMCRunnerHirep<TheRepresentations, MinimumNorm2> HMCWrapper;  // Uses the default minimum norm
+  typedef WilsonAdjImplD FermionImplPolicy;
+  typedef WilsonAdjFermionD FermionAction;
   typedef typename FermionAction::FermionField FermionField;
 
 
@@ -57,16 +85,16 @@ int main(int argc, char **argv) {
 
   // Checkpointer definition
   CheckpointerParameters CPparams;  
-  CPparams.config_prefix = "ckpoint_lat";
-  CPparams.rng_prefix = "ckpoint_rng";
-  CPparams.saveInterval = 5;
+  CPparams.config_prefix = "cnfg/ckpoint_lat";
+  CPparams.rng_prefix = "rand/ckpoint_rng";
+  CPparams.saveInterval = HMCParams.save_freq;
   CPparams.format = "IEEE64BIG";
   
   TheHMC.Resources.LoadNerscCheckpointer(CPparams);
 
   RNGModuleParameters RNGpar;
-  RNGpar.serial_seeds = "1 2 3 4 5";
-  RNGpar.parallel_seeds = "6 7 8 9 10";
+  RNGpar.serial_seeds = HMCParams.serial_seed;
+  RNGpar.parallel_seeds = HMCParams.parallel_seed;
   TheHMC.Resources.SetRNGSeeds(RNGpar);
 
   // Construct observables
@@ -79,36 +107,37 @@ int main(int argc, char **argv) {
   // need wrappers of the fermionic classes 
   // that have a complex construction
   // standard
-  RealD beta = 5.6 ;
-  WilsonGaugeActionR Waction(beta);
+  RealD beta = HMCParams.beta;
+  WilsonGaugeActionD Waction(beta);
     
   auto GridPtr = TheHMC.Resources.GetCartesian();
   auto GridRBPtr = TheHMC.Resources.GetRBCartesian();
 
   // temporarily need a gauge field
-  LatticeGaugeField U(GridPtr);
+  AdjointRepresentation::LatticeField U(GridPtr);
 
-  Real mass = -0.77;
+  Real mass = HMCParams.m;
 
   // Can we define an overloaded operator that does not need U and initialises
   // it with zeroes?
-  FermionAction FermOp(U, *GridPtr, *GridRBPtr, mass);
+  // These lines are unecessary if BC are all periodic
+  std::vector<Complex> boundary = {1,1,1,-1};
+  FermionAction::ImplParams FParams(boundary);
+  FermionAction FermOp(U, *GridPtr, *GridRBPtr, mass, FParams);
 
-  // 1+1 flavour
-  OneFlavourRationalParams Params(1.0e-4, 64.0, 2000, 1.0e-6);
-  OneFlavourRationalPseudoFermionAction<WilsonImplR> WilsonNf1a(FermOp,Params);
-  OneFlavourRationalPseudoFermionAction<WilsonImplR> WilsonNf1b(FermOp,Params);
+  // 1 flavour
+  //OneFlavourRationalParams PfParams(1.0e-4, 64.0, 2000, 1.0e-10, 25, 100);
+  OneFlavourRationalParams PfParams(1.0e-4, 64.0, 2000, 1.0e-6);
+  OneFlavourEvenOddRationalPseudoFermionAction<FermionImplPolicy> WilsonNf1(FermOp, PfParams);
 
   //Smearing on/off
-  WilsonNf1a.is_smeared = false;
-  WilsonNf1b.is_smeared = false;
+  WilsonNf1.is_smeared = false;
 
     // Collect actions
-  ActionLevel<HMCWrapper::Field> Level1(1);
-  Level1.push_back(&WilsonNf1a);
-  Level1.push_back(&WilsonNf1b);
+  ActionLevel<HMCWrapper::Field, TheRepresentations> Level1(1);
+  Level1.push_back(&WilsonNf1);
 
-  ActionLevel<HMCWrapper::Field> Level2(4);
+  ActionLevel<HMCWrapper::Field, TheRepresentations> Level2(5);
   Level2.push_back(&Waction);
 
   TheHMC.TheAction.push_back(Level1);
@@ -124,8 +153,8 @@ int main(int argc, char **argv) {
   */
 
   // HMC parameters are serialisable 
-  TheHMC.Parameters.MD.MDsteps = 20;
-  TheHMC.Parameters.MD.trajL   = 1.0;
+  TheHMC.Parameters.MD.MDsteps = HMCParams.nsteps;
+  TheHMC.Parameters.MD.trajL   = HMCParams.tlen;
 
   TheHMC.ReadCommandLine(argc, argv); // these can be parameters from file
   TheHMC.Run();  // no smearing
@@ -134,6 +163,4 @@ int main(int argc, char **argv) {
   Grid_finalize();
 
 } // main
-
-
 
