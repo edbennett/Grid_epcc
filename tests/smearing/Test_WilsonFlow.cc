@@ -33,9 +33,8 @@ namespace Grid{
     GRID_SERIALIZABLE_CLASS_MEMBERS(WFParameters,
             int, steps,
             double, step_size,
-            int, meas_interval,
-            double, maxTau); // for the adaptive algorithm
-       
+            int, meas_interval);
+
 
     template <class ReaderClass >
     WFParameters(Reader<ReaderClass>& Reader){
@@ -86,7 +85,7 @@ int main(int argc, char **argv) {
   WFParameters WFPar(Reader);
   ConfParameters CPar(Reader);
   CheckpointerParameters CPPar(CPar.conf_prefix, CPar.rng_prefix);
-  BinaryHmcCheckpointer<PeriodicGimplR> CPBin(CPPar);
+  NerscHmcCheckpointer<PeriodicGimplR> CPBin(CPPar);
 
   for (int conf = CPar.StartConfiguration; conf <= CPar.EndConfiguration; conf+= CPar.Skip){
 
@@ -98,7 +97,7 @@ int main(int argc, char **argv) {
 
   WilsonFlow<PeriodicGimplR> WF(WFPar.steps, WFPar.step_size, WFPar.meas_interval);
 
-  WF.smear_adaptive(Uflow, Umu, WFPar.maxTau);
+  WF.smear(Uflow, Umu);
 
   RealD WFlow_plaq = WilsonLoops<PeriodicGimplR>::avgPlaquette(Uflow);
   RealD WFlow_TC   = WilsonLoops<PeriodicGimplR>::TopologicalCharge(Uflow);
