@@ -142,6 +142,15 @@ inline typename vobj::scalar_objectD sumD(const vobj *arg, Integer osites)
   return sumD_cpu(arg,osites);
 #endif  
 }
+template<class vobj>
+inline typename vobj::scalar_objectD sumD_large(const vobj *arg, Integer osites)
+{
+#if defined(GRID_CUDA)||defined(GRID_HIP)
+  return sumD_gpu_large(arg,osites);
+#else
+  return sumD_cpu(arg,osites);
+#endif  
+}
 
 template<class vobj>
 inline typename vobj::scalar_object sum(const Lattice<vobj> &arg)
@@ -155,6 +164,22 @@ inline typename vobj::scalar_object sum(const Lattice<vobj> &arg)
   Integer osites = arg.Grid()->oSites();
   auto ssum= sum_cpu(&arg_v[0],osites);
 #endif  
+  arg.Grid()->GlobalSum(ssum);
+  return ssum;
+}
+
+template<class vobj>
+inline typename vobj::scalar_object sum_large(const Lattice<vobj> &arg)
+{
+#if defined(GRID_CUDA)||defined(GRID_HIP)
+  autoView( arg_v, arg, AcceleratorRead);
+  Integer osites = arg.Grid()->oSites();
+  auto ssum= sum_gpu_large(&arg_v[0],osites);
+#else
+  autoView(arg_v, arg, CpuRead);
+  Integer osites = arg.Grid()->oSites();
+  auto ssum= sum_cpu(&arg_v[0],osites);
+#endif
   arg.Grid()->GlobalSum(ssum);
   return ssum;
 }
@@ -361,6 +386,7 @@ template<class vobj> inline void sliceSum(const Lattice<vobj> &Data,std::vector<
   // But easily avoided by using double precision fields
   ///////////////////////////////////////////////////////
   typedef typename vobj::scalar_object sobj;
+  typedef typename vobj::scalar_object::scalar_type scalar_type;
   GridBase  *grid = Data.Grid();
   assert(grid!=NULL);
 
@@ -419,20 +445,19 @@ template<class vobj> inline void sliceSum(const Lattice<vobj> &Data,std::vector<
   }
   
   // sum over nodes.
-  sobj gsum;
   for(int t=0;t<fd;t++){
     int pt = t/ld; // processor plane
     int lt = t%ld;
     if ( pt == grid->_processor_coor[orthogdim] ) {
-      gsum=lsSum[lt];
+      result[t]=lsSum[lt];
     } else {
-      gsum=Zero();
+      result[t]=Zero();
     }
 
-    grid->GlobalSum(gsum);
-
-    result[t]=gsum;
   }
+  scalar_type * ptr = (scalar_type *) &result[0];
+  int words = fd*sizeof(sobj)/sizeof(scalar_type);
+  grid->GlobalSumVector(ptr, words);
 }
 
 template<class vobj>

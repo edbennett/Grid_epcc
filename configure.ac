@@ -159,7 +159,7 @@ case ${ac_ZMOBIUS} in
 esac
 ############### Nc
 AC_ARG_ENABLE([Nc],
-    [AC_HELP_STRING([--enable-Nc=2|3|4], [enable number of colours])],
+    [AC_HELP_STRING([--enable-Nc=2|3|4|5], [enable number of colours])],
     [ac_Nc=${enable_Nc}], [ac_Nc=3])
 
 case ${ac_Nc} in
@@ -390,6 +390,7 @@ case ${CXXTEST} in
     CXXFLAGS="$CXXFLAGS -Xcompiler -fno-strict-aliasing --expt-extended-lambda --expt-relaxed-constexpr"
     if test $ac_openmp = yes; then
        CXXFLAGS="$CXXFLAGS -Xcompiler -fopenmp"
+       LDFLAGS="$LDFLAGS -Xcompiler -fopenmp"
     fi
     ;;
   hipcc)
@@ -815,6 +816,7 @@ AC_CONFIG_FILES(tests/smearing/Makefile)
 AC_CONFIG_FILES(tests/qdpxx/Makefile)
 AC_CONFIG_FILES(tests/testu01/Makefile)
 AC_CONFIG_FILES(benchmarks/Makefile)
+AC_CONFIG_FILES(examples/Makefile)
 AC_OUTPUT
 
 echo ""
