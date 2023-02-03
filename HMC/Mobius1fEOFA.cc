@@ -197,12 +197,12 @@ int main(int argc, char **argv) {
 
   // DJM: setup for EOFA ratio (Mobius)
   OneFlavourRationalParams OFRp;
-  OFRp.lo       = 0.1;
-  OFRp.hi       = 25.0;
+  OFRp.lo       = 1.0e-4;
+  OFRp.hi       = 64.0;
   OFRp.MaxIter  = 10000;
   OFRp.tolerance= 1.0e-9;
-  OFRp.degree   = 14;
-  OFRp.precision= 50;
+  OFRp.degree   = 20;
+  OFRp.precision= 100;
 
   
   FermionEOFAAction OneFlavour_Op_L (U , *FGrid , *FrbGrid , *GridPtr , *GridRBPtr , oneflavour_mass, oneflavour_mass, pv_mass, 0.0, -1, M5, b, c, FParams);
