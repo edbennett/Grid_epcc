@@ -27,7 +27,6 @@ DWF_IMPL_LIST=" \
 	   WilsonImplD \
 	   WilsonAdjImplF \
 	   WilsonAdjImplD \
-	   WilsonImplFH \
 	   WilsonImplDF \
 	   ZWilsonImplF \
 	   ZWilsonImplD "
