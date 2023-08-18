@@ -249,6 +249,11 @@ typedef WilsonImpl<vComplexF, FundamentalRepresentation, CoeffComplex > ZWilsonI
 typedef WilsonImpl<vComplexD, FundamentalRepresentation, CoeffComplex > ZWilsonImplD; // Double
 typedef WilsonImpl<vComplexD2, FundamentalRepresentation, CoeffComplex > ZWilsonImplD2; // Double
 
+typedef WilsonImpl<vComplex,  AdjointRepresentation, CoeffComplex > ZWilsonAdjImplR; // Real.. whichever prec
+typedef WilsonImpl<vComplexF, AdjointRepresentation, CoeffComplex > ZWilsonAdjImplF; // Float
+typedef WilsonImpl<vComplexD, AdjointRepresentation, CoeffComplex > ZWilsonAdjImplD; // Double
+typedef WilsonImpl<vComplexD2, AdjointRepresentation, CoeffComplex > ZWilsonAdjImplD2; // Double
+
 typedef WilsonImpl<vComplex,  AdjointRepresentation, CoeffReal > WilsonAdjImplR;   // Real.. whichever prec
 typedef WilsonImpl<vComplexF, AdjointRepresentation, CoeffReal > WilsonAdjImplF;  // Float
 typedef WilsonImpl<vComplexD, AdjointRepresentation, CoeffReal > WilsonAdjImplD;  // Double

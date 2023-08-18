@@ -141,6 +141,9 @@ typedef WilsonTMFermion<WilsonImplD2> WilsonTMFermionD2;
 typedef WilsonTMFermion<WilsonImplF> WilsonTMFermionF;
 typedef WilsonTMFermion<WilsonImplD> WilsonTMFermionD;
 
+typedef WilsonTMFermion<SpWilsonImplF> SpWilsonTMFermionF;
+typedef WilsonTMFermion<SpWilsonImplD> SpWilsonTMFermionD;
+
 // Clover fermions
 template <typename WImpl> using WilsonClover = WilsonCloverFermion<WImpl, CloverHelpers<WImpl>>;
 template <typename WImpl> using WilsonExpClover = WilsonCloverFermion<WImpl, ExpCloverHelpers<WImpl>>;
@@ -195,14 +198,17 @@ typedef DomainWallEOFAFermion<WilsonImplD> DomainWallEOFAFermionD;
 typedef MobiusFermion<WilsonImplD2> MobiusFermionD2;
 typedef MobiusFermion<WilsonImplF> MobiusFermionF;
 typedef MobiusFermion<WilsonImplD> MobiusFermionD;
+typedef MobiusFermion<WilsonAdjImplF> AdjMobiusFermionF;
+typedef MobiusFermion<WilsonAdjImplD> AdjMobiusFermionD;
 
 typedef MobiusEOFAFermion<WilsonImplD2> MobiusEOFAFermionD2;
-typedef MobiusEOFAFermion<WilsonImplF> MobiusEOFAFermionF;
-typedef MobiusEOFAFermion<WilsonImplD> MobiusEOFAFermionD;
+
 
 typedef ZMobiusFermion<ZWilsonImplD2> ZMobiusFermionD2;
 typedef ZMobiusFermion<ZWilsonImplF> ZMobiusFermionF;
 typedef ZMobiusFermion<ZWilsonImplD> ZMobiusFermionD;
+typedef ZMobiusFermion<ZWilsonAdjImplF> AdjZMobiusFermionF;
+typedef ZMobiusFermion<ZWilsonAdjImplD> AdjZMobiusFermionD;
 
 typedef ScaledShamirFermion<WilsonImplD2> ScaledShamirFermionD2;
 typedef ScaledShamirFermion<WilsonImplF> ScaledShamirFermionF;

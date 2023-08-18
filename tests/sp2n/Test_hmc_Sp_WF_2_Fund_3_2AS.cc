@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   typedef PolyakovMod<HMCWrapper::ImplPolicy> PolyakovObs;
   TheHMC.Resources.AddObservable<PolyakovObs>();
 
-  RealD beta = 6 ;
+  RealD beta = 6.5 ;
 
   SpWilsonGaugeActionR Waction(beta);
 
@@ -55,18 +55,18 @@ int main(int argc, char **argv) {
   SpTwoIndexAntiSymmetricRepresentation::LatticeField asU(GridPtr);
     //LatticeGaugeField U(GridPtr);
 
-  RealD Fundmass = -0.71;
-  RealD ASmass = -0.71;
-  std::vector<Complex> boundary = {-1,-1,-1,-1};
+  RealD Fundmass = -0.7;
+  RealD ASmass = -1.03;
+  std::vector<Complex> boundary = {1, 1, 1, -1};
     
   FundFermionAction::ImplParams bc(boundary);
   TwoIndexFermionAction::ImplParams bbc(boundary);
 
   FundFermionAction FundFermOp(fundU, *GridPtr, *GridRBPtr, Fundmass, bbc);
   TwoIndexFermionAction TwoIndexFermOp(asU, *GridPtr, *GridRBPtr, ASmass, bbc);
-  ConjugateGradient<FundFermionField> fCG(1.0e-8, 2000, false);
-  ConjugateGradient<TwoIndexFermionField> asCG(1.0e-8, 2000, false);
-  OneFlavourRationalParams Params(1.0e-6, 64.0, 2000, 1.0e-6, 16);
+  ConjugateGradient<FundFermionField> fCG(3.0e-8, 2000, false);
+  ConjugateGradient<TwoIndexFermionField> asCG(3.0e-8, 2000, false);
+  OneFlavourRationalParams Params(1.0e-6, 64.0, 4000, 1.0e-2, 16);
 
   TwoFlavourPseudoFermionAction<FundFermionImplPolicy> fundNf2(FundFermOp, fCG, fCG);
   TwoFlavourPseudoFermionAction<TwoIndexFermionImplPolicy> asNf2(TwoIndexFermOp, asCG, asCG);
@@ -81,13 +81,13 @@ int main(int argc, char **argv) {
   Level1.push_back(&asNf2);
   Level1.push_back(&asNf1);
 
-  ActionLevel<HMCWrapper::Field, TheRepresentations > Level2(4);
+  ActionLevel<HMCWrapper::Field, TheRepresentations > Level2(2);
   Level2.push_back(&Waction);
 
   TheHMC.TheAction.push_back(Level1);
   TheHMC.TheAction.push_back(Level2);
 
-  TheHMC.Parameters.MD.MDsteps = 28;
+  TheHMC.Parameters.MD.MDsteps = 80;
   TheHMC.Parameters.MD.trajL   = 1.0;
 
   TheHMC.ReadCommandLine(argc, argv);
