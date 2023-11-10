@@ -212,6 +212,9 @@ void WilsonFlowBase<Gimpl>::setDefaultMeasurements(int meas_interval){
       std::cout << GridLogMessage << "[WilsonFlow] Energy density (plaq) : "  << step << "  " << t << "  " << energyDensityPlaquette(t,U) << std::endl;
     });
   addMeasurement(meas_interval, [](int step, RealD t, const typename Gimpl::GaugeField &U){
+      std::cout << GridLogMessage << "[WilsonFlow] Energy density (cloverleaf) : "  << step << "  " << t << "  " << energyDensityCloverleaf(t,U) << std::endl;
+    });
+  addMeasurement(meas_interval, [](int step, RealD t, const typename Gimpl::GaugeField &U){
       std::cout << GridLogMessage << "[WilsonFlow] Top. charge           : "  << step << "  " << WilsonLoops<Gimpl>::TopologicalCharge(U) << std::endl;
     });
 }
