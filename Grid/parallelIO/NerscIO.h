@@ -160,7 +160,12 @@ public:
     // depending on datatype, set up munger;
     // munger is a function of <floating point, Real, data_type>
     const std::string stNC = std::to_string( Nc ) ;
-    if ( header.data_type == std::string("4D_SU"+stNC+"_GAUGE") ) {
+    if (Nc != 3 && (header.data_type == std::string("4D_SU3_GAUGE") || header.data_type == std::string("4D_SU3_GAUGE_3x3"))) {
+      std::cout << GridLogMessage << "Configuration identifies itself as SU(3), but we are SU" << Nc << ". "
+		<< "Proceeding anyway, as this configuration was likely generated using an older version of Grid that generated incorrect headers."
+		<< std::endl;
+    }
+    if ( header.data_type == std::string("4D_SU3_GAUGE") || header.data_type == std::string("4D_SU" + stNC + "_GAUGE") ) {
       if ( ieee32 || ieee32big ) {
 	BinaryIO::readLatticeObject<vLorentzColourMatrixD, LorentzColour2x3F> 
 	  (Umu,file,Gauge3x2munger<LorentzColour2x3F,LorentzColourMatrix>(), offset,format,
@@ -171,7 +176,7 @@ public:
 	  (Umu,file,Gauge3x2munger<LorentzColour2x3D,LorentzColourMatrix>(),offset,format,
 	   nersc_csum,scidac_csuma,scidac_csumb);
       }
-    } else if ( header.data_type == std::string("4D_SU"+stNC+"_GAUGE_"+stNC+"x"+stNC) ) {
+    } else if ( header.data_type == std::string("4D_SU3_GAUGE_3x3") || header.data_type == std::string("4D_SU" + stNC + "_GAUGE_" + stNC + "x" + stNC) ) {
       if ( ieee32 || ieee32big ) {
 	BinaryIO::readLatticeObject<vLorentzColourMatrixD,LorentzColourMatrixF>
 	  (Umu,file,GaugeSimpleMunger<LorentzColourMatrixF,LorentzColourMatrix>(),offset,format,
@@ -206,7 +211,7 @@ public:
       exit(0);
     }
     if(exitOnReadPlaquetteMismatch()) assert(fabs(clone.plaquette -header.plaquette ) < 1.0e-5 );
-    assert(fabs(clone.link_trace-header.link_trace) < 1.0e-6 );
+    assert(fabs(clone.link_trace-header.link_trace * 3 / Nc) < 1.0e-6 || fabs(clone.link_trace-header.link_trace * 3) < 1.0e-6);
     assert(nersc_csum == header.checksum );
       
     std::cout<<GridLogMessage <<"NERSC Configuration "<<file<< " and plaquette, link trace, and checksum agree"<<std::endl;
