@@ -30,6 +30,8 @@ COMPACT_WILSON_IMPL_LIST=" \
 	   WilsonImplD "
 
 DWF_IMPL_LIST=" \
+	   WilsonAdjImplF \
+	   WilsonAdjImplD \
 	   WilsonImplF \
 	   WilsonImplD \
 	   WilsonImplD2 \
