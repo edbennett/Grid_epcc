@@ -33,6 +33,8 @@ DWF_IMPL_LIST=" \
 	   WilsonImplF \
 	   WilsonImplD \
 	   WilsonImplD2 \
+	   WilsonAdjImplF \
+	   WilsonAdjImplD \
 	   ZWilsonImplF \
 	   ZWilsonImplD2 "
 
