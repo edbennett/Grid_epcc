@@ -103,6 +103,7 @@ template<typename vtype> using iSinglet                   = iScalar<iScalar<iSca
 template<typename vtype> using iSpinMatrix                = iScalar<iMatrix<iScalar<vtype>, Ns> >;
 template<typename vtype> using iColourMatrix              = iScalar<iScalar<iMatrix<vtype, Nc> > > ;
 template<typename vtype> using iSpinColourMatrix          = iScalar<iMatrix<iMatrix<vtype, Nc>, Ns> >;
+template<typename vtype, int NF = Grid::Nc> using iSpinFlavourMatrix = Grid::iScalar<Grid::iMatrix<Grid::iMatrix<vtype, NF>, Grid::Ns> >;
 template<typename vtype> using iLorentzColourMatrix       = iVector<iScalar<iMatrix<vtype, Nc> >, Nd > ;
 template<typename vtype> using iLorentzComplex            = iVector<iScalar<iScalar<vtype> >, Nd > ;
 template<typename vtype> using iDoubleStoredColourMatrix  = iVector<iScalar<iMatrix<vtype, Nc> >, Nds > ;
@@ -148,6 +149,12 @@ typedef iSpinColourMatrix<vComplex >    vSpinColourMatrix;
 typedef iSpinColourMatrix<vComplexF>    vSpinColourMatrixF;
 typedef iSpinColourMatrix<vComplexD>    vSpinColourMatrixD;
 typedef iSpinColourMatrix<vComplexD2>   vSpinColourMatrixD2;
+
+template<int NF = Grid::Nc> using vSpinFlavourMatrix = iSpinFlavourMatrix<Grid::vComplex, NF>;
+template<int NF = Grid::Nc> using vSpinFlavourMatrixF = iSpinFlavourMatrix<Grid::vComplexF, NF>;
+template<int NF = Grid::Nc> using vSpinFlavourMatrixD = iSpinFlavourMatrix<Grid::vComplexD, NF>;
+template<int NF = Grid::Nc> using vSpinFlavourMatrixD2 = iSpinFlavourMatrix<Grid::vComplexD2, NF>;
+
 
 // SpinColourSpinColour matrix
 typedef iSpinColourSpinColourMatrix<Complex  >    SpinColourSpinColourMatrix;
@@ -307,6 +314,12 @@ typedef Lattice<vSpinColourMatrixF>     LatticeSpinColourMatrixF;
 typedef Lattice<vSpinColourMatrixD>     LatticeSpinColourMatrixD;
 typedef Lattice<vSpinColourMatrixD2>    LatticeSpinColourMatrixD2;
 
+template<int NF = Grid::Nc> using LatticeSpinFlavourMatrix = Grid::Lattice<vSpinFlavourMatrix<NF>>;
+template<int NF = Grid::Nc> using LatticeSpinFlavourMatrixF = Grid::Lattice<vSpinFlavourMatrixF<NF>>;
+template<int NF = Grid::Nc> using LatticeSpinFlavourMatrixD = Grid::Lattice<vSpinFlavourMatrixD<NF>>;
+template<int NF = Grid::Nc> using LatticeSpinFlavourMatrixD2 = Grid::Lattice<vSpinFlavourMatrixD2<NF>>;
+
+
 typedef Lattice<vSpinColourSpinColourMatrix>      LatticeSpinColourSpinColourMatrix;
 typedef Lattice<vSpinColourSpinColourMatrixF>     LatticeSpinColourSpinColourMatrixF;
 typedef Lattice<vSpinColourSpinColourMatrixD>     LatticeSpinColourSpinColourMatrixD;
@@ -377,10 +390,16 @@ typedef LatticeSpinColourVectorF     LatticeFermionF;
 typedef LatticeSpinColourVectorD     LatticeFermionD;
 typedef LatticeSpinColourVectorD2    LatticeFermionD2;
 
-typedef LatticeSpinColourMatrix                LatticePropagator;
-typedef LatticeSpinColourMatrixF               LatticePropagatorF;
-typedef LatticeSpinColourMatrixD               LatticePropagatorD;
-typedef LatticeSpinColourMatrixD2              LatticePropagatorD2;
+
+// Fundamental representation propagators
+typedef LatticeSpinFlavourMatrix<Nc> LatticePropagator;
+typedef LatticeSpinFlavourMatrixF<Nc> LatticePropagatorF;
+typedef LatticeSpinFlavourMatrixD<Nc> LatticePropagatorD;
+typedef LatticeSpinFlavourMatrixD2<Nc> LatticePropagatorD2;
+
+// Instantiate
+template class Lattice<iScalar<iMatrix<iMatrix<vComplex, Nc>, Ns>>>;
+template class Lattice<iScalar<iMatrix<iMatrix<vComplex, Nc*Nc-1>, Ns>>>;
 
 typedef LatticeLorentzColourMatrix             LatticeGaugeField;
 typedef LatticeLorentzColourMatrixF            LatticeGaugeFieldF;

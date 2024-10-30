@@ -1,149 +1,173 @@
 #include <Grid/Grid.h>
 
-#define verbose 0
+struct hmc_params {
+  int starttraj;
+  double beta;
+  double mass;
+  double hb_mu;
+  double tlen;
+  int nsteps;
+};
 
-using namespace Grid;
 
-template<int this_nc>
-static void check_dimensions() {
-    
-    const int this_n = this_nc/2;
-    const int this_algebra_dim = Sp<this_nc>::AlgebraDimension;
-    
-    RealD realA;
-    std::cout << GridLogMessage << "Nc = " << this_n << " 2as dimension is " << Sp_TwoIndex<this_nc, AntiSymmetric>::Dimension << std::endl;
-    std::cout << GridLogMessage << "Nc = " << this_n << " 2s dimension is " << Sp_TwoIndex<this_nc, Symmetric>::Dimension << std::endl;
-    std::cout << GridLogMessage << "Nc = " << this_n << " algebra dimension is " << this_algebra_dim << std::endl;
-    realA = Sp_TwoIndex<this_nc, AntiSymmetric>::Dimension + Sp_TwoIndex<this_nc, Symmetric>::Dimension;
-    std::cout << GridLogMessage << "Checking dim(2AS) + dim(AS) + 1 = Nc * Nc " << this_algebra_dim << std::endl;
-    assert ( realA == this_nc * this_nc - 1); // Nc x Nc = dim(2indxS) + dim(2indxAS) + dim(singlet)
+
+hmc_params ReadCommandLineHMC(int argc, char** argv) {
+  hmc_params HMCParams;
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--starttraj")) {
+     HMCParams.starttraj = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--starttraj"));
+  } else {
+    std::cout << Grid::GridLogError << "--starttraj must be specified" << std::endl;
+  }
+
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--nsteps")) {
+     HMCParams.nsteps = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--nsteps"));
+  } else {
+    std::cout << Grid::GridLogError << "--nsteps must be specified" << std::endl;
+  }
+
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--tlen")) {
+     HMCParams.tlen = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--tlen"));
+  } else {
+    std::cout << Grid::GridLogError << "--tlen must be specified" << std::endl;
+  }
+
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--beta")) {
+     HMCParams.beta = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--beta"));
+  } else {
+    std::cout << Grid::GridLogError << "--beta must be specified" << std::endl;
+  }
+
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--mass")) {
+     HMCParams.mass = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--mass"));
+  } else {
+    std::cout << Grid::GridLogError << "--mass must be specified" << std::endl;
+  }
+
+  if (Grid::GridCmdOptionExists(argv, argv + argc, "--hb_mu")) {
+     HMCParams.hb_mu = std::stod(Grid::GridCmdOptionPayload(argv, argv + argc, "--hb_mu"));
+  } else {
+    std::cout << Grid::GridLogError << "--hb_mu must be specified" << std::endl;
+  }
+
+  return HMCParams;
 }
 
-template<int this_nc, TwoIndexSymmetry S>
-static void run_symmetry_checks() {
-    typedef typename Sp_TwoIndex<this_nc, S>::template iGroupMatrix<Complex> Matrix;
-    const int this_n = this_nc/2;
-    const int this_irrep_dim = Sp_TwoIndex<this_nc, S>::Dimension;
-    const int this_algebra_dim = Sp<this_nc>::AlgebraDimension;
-    Matrix eij_c;
-    Matrix e_sum;
-    RealD realS = S;
-    
-    std::cout << GridLogMessage << "checking base has symmetry " << S << std::endl;
-    for (int a=0; a < this_irrep_dim; a++)
-    {
-        Sp_TwoIndex<this_nc, S>::base(a, eij_c);
-        e_sum = eij_c - realS * transpose(eij_c);
-        std::cout << GridLogMessage << "e_ab - (" << S << " * e_ab^T ) = " << norm2(e_sum) << std::endl;
-        assert(norm2(e_sum) < 1e-8);
-          
-    }
-}
 
-template<int this_nc, TwoIndexSymmetry S>
-static void run_traces_checks() {
-    typedef typename Sp_TwoIndex<this_nc, S>::template iGroupMatrix<Complex> Matrix;
-    const int this_n = this_nc/2;
-    const int this_irrep_dim = Sp_TwoIndex<this_nc, S>::Dimension;
-    const int this_algebra_dim = Sp<this_nc>::AlgebraDimension;
-    Matrix eij_a;
-    Matrix eij_b;
-    Matrix Omega;
-    Sp<this_nc>::Omega(Omega);
-    RealD realS = S;
-    RealD realA;
-    
-    std::cout << GridLogMessage << "Checking Tr (e^(ab) Omega ) = 0 and Tr (e^(ab) e^(cd) = delta^((ab)(cd)) ) " << std::endl;
-    for (int a=0; a < Sp_TwoIndex<this_nc, S>::Dimension; a++) {
-        Sp_TwoIndex<this_nc, S>::base(a, eij_a);
-        realA = norm2(trace(Omega*eij_a));
-        std::cout << GridLogMessage << "Checkig Omega-trace for e_{ab=" << a << "} " << std::endl;
-        //std::cout << GridLogMessage << "Tr ( Omega e_{ab=" << a << "} ) = " << realA << std::endl;
-        assert(realA < 1e-8);
-        for (int b=0; b < Sp_TwoIndex<this_nc, S>::Dimension; b++) {
-            Sp_TwoIndex<this_nc, S>::base(b, eij_b);
-            auto d_ab = TensorRemove(trace(eij_a * eij_b));
-    #if verbose
-            std::cout << GridLogMessage << "Tr( e_{ab=" << a << "} e_{cd=" << b << "} ) = " << d_ab << std::endl;
-    #endif
-            std::cout << GridLogMessage << "Checking orthonormality for e_{ab = " << a << "} " << std::endl;
-            if (a==b) {
-                assert(real(d_ab) - realS < 1e-8);
-            } else {
-                assert(real(d_ab) < 1e-8);
-            }
-            assert(imag(d_ab) < 1e-8);
-            assert(imag(d_ab) < 1e-8);
-        }
-    }
-    
-}
 
-template<int this_nc, TwoIndexSymmetry S>
-static void run_generators_checks() {
-    const int this_n = this_nc/2;
-    const int this_irrep_dim = Sp_TwoIndex<this_nc, S>::Dimension;
-    const int this_algebra_dim = Sp<this_nc>::AlgebraDimension;
-    typedef typename Sp_TwoIndex<this_nc, S>::template iGroupMatrix<Complex> Matrix;
-    int sum = 0;
-    int sum_im = 0;
-    Vector<Matrix> ta_fund(this_algebra_dim);
-    Vector<Matrix> eij(this_irrep_dim);
-    Matrix tmp_l;
-    Matrix tmp_r;
-    for (int n = 0; n < this_algebra_dim; n++)
-    {
-        Sp<this_nc>::generator(n, ta_fund[n]);  // generators in the fundamental
-    }
-      for (int a = 0; a < this_irrep_dim; a++)
-    {
-        Sp_TwoIndex<this_nc, S>::base(a, eij[a]);   // base functions e_ij^a for upgrading gauge links from fund to 2-index
-    }
-    for (int gen_id = 0; gen_id < this_algebra_dim; gen_id++)
-    {
-        sum = 0;
-        sum_im = 0;
-        std::cout << GridLogMessage <<  "generator number " << gen_id << std::endl;
-        for (int a = 0; a < this_irrep_dim; a++)
-        {
-          
-            tmp_l = adj(eij[a])*ta_fund[gen_id]*eij[a];
-            tmp_r = adj(eij[a])*eij[a]*transpose(ta_fund[gen_id]);
-    #if verbose
-            std::cout << GridLogMessage << " as_indx = " << a << " eDag T_F e = " << std::endl << tmp_l << std::endl;
-            std::cout << GridLogMessage << " as_indx = " << a << " eDag e T_F^T = " << std::endl << tmp_r << std::endl;
-    #endif
-            //std::cout << GridLogMessage << " as_indx = " << a << " Tr(eDag T_F e + eDag e T_F^T) = " << TensorRemove(trace(tmp_l+tmp_r)) << std::endl;
-            sum += real(TensorRemove(trace(tmp_l+tmp_r)));
-            sum_im += imag(TensorRemove(trace(tmp_l+tmp_r)));
-        }
-        std::cout << GridLogMessage << "re-evaluated trace of the generator " << gen_id << " is " << sum << " " << sum_im << std::endl;
-        assert ( sum < 1e-8) ;
-        assert ( sum_im < 1e-8) ;
-    }
-    
-}
-    
-template<int this_nc, TwoIndexSymmetry S>
-static void run_base_checks() {
-    std::cout << GridLogMessage << " ****** " << std::endl;
-    std::cout << GridLogMessage << "Running checks for Nc = " << this_nc << " TwoIndex Symmetry = " << S << std::endl;
-    run_symmetry_checks<this_nc, S>();
-    run_traces_checks<this_nc, S>();
-    run_generators_checks<this_nc, S>();
-}
+int main(int argc, char **argv) {
+  using namespace Grid;
+  hmc_params HMCParams = ReadCommandLineHMC(argc, argv);
+  
+  typedef Representations<SpFundamentalRepresentation,
+                          SpTwoIndexAntiSymmetricRepresentation>
+      TheRepresentations;
+  
+  Grid_init(&argc, &argv);
+  typedef GenericSpHMCRunnerHirep<TheRepresentations, MinimumNorm2>
+      HMCWrapper;
+  typedef SpWilsonTwoIndexAntiSymmetricImplR FermionImplPolicy;
+  typedef SpWilsonTMTwoIndexAntiSymmetricFermionD FermionAction;
+  typedef typename FermionAction::FermionField FermionField;
 
-int main(int argc, char** argv) {
-    check_dimensions<2>();
-    check_dimensions<4>();
-    check_dimensions<6>();
-    check_dimensions<8>();
-    
-    run_base_checks<2, Symmetric>();    // For Nc=2 the AS is the singlet
-    run_base_checks<4, Symmetric>();
-    run_base_checks<4, AntiSymmetric>();
-    run_base_checks<6, Symmetric>();
-    run_base_checks<6, AntiSymmetric>();
-    run_base_checks<8, Symmetric>();
-    run_base_checks<8, AntiSymmetric>();
+  //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  HMCparameters HMCparams2;
+  HMCparams2.StartTrajectory  = HMCParams.starttraj;
+  HMCWrapper TheHMC(HMCparams2);
+
+  TheHMC.Resources.AddFourDimGrid("gauge");
+
+  // Checkpointer definition
+  CheckpointerParameters CPparams;
+  CPparams.config_prefix = "./hasenbusch/ckpoint_lat";
+  CPparams.rng_prefix = "./hasenbusch/ckpoint_rng";
+  CPparams.saveInterval = 1;
+  CPparams.format = "IEEE64BIG";
+
+  TheHMC.Resources.LoadNerscCheckpointer(CPparams);
+
+  OneFlavourRationalParams Params(1.0e-6, 64.0, 2000, 1.0e-6, 16);
+
+  RNGModuleParameters RNGpar;
+  RNGpar.serial_seeds = "1 2 3 4 5";
+  RNGpar.parallel_seeds = "6 7 8 9 10";
+  TheHMC.Resources.SetRNGSeeds(RNGpar);
+
+  // Construct observables
+  typedef PlaquetteMod<HMCWrapper::ImplPolicy> PlaqObs;
+  TheHMC.Resources.AddObservable<PlaqObs>();
+
+  RealD beta = HMCParams.beta;
+  std::vector<RealD> hasenbusch({ HMCParams.hb_mu });
+  SpWilsonGaugeActionR Waction(beta);
+
+
+  auto GridPtr = TheHMC.Resources.GetCartesian();
+  auto GridRBPtr = TheHMC.Resources.GetRBCartesian();
+
+  SpTwoIndexAntiSymmetricRepresentation::LatticeField U(GridPtr);
+ 
+  // LatticeGaugeField U(GridPtr);
+
+  RealD mass = HMCParams.mass;
+  Real pv_mass      = 10000.0;
+
+  std::vector<Complex> boundary = {+1, +1, +1, -1};
+  FermionAction::ImplParams bc(boundary);
+
+  ConjugateGradient<FermionField> CG(1.0e-8, 2000, false);
+
+  ActionLevel<HMCWrapper::Field, TheRepresentations> Level1(1);
+  ActionLevel<HMCWrapper::Field, TheRepresentations> Level2(4);
+
+  std::cout << GridLogMessage << "mass " << mass << std::endl;
+
+  // Hasenbusch
+  std::vector<RealD> light_den;
+  std::vector<RealD> light_num;
+
+  int n_hasenbusch = hasenbusch.size();
+  light_den.push_back(0); // Target mass
+  for(int h=0;h<n_hasenbusch;h++){
+    light_den.push_back(hasenbusch[h]);
+    light_num.push_back(hasenbusch[h]);
+  }
+  light_num.push_back(pv_mass);
+
+  std::vector<FermionAction *> Numerators;
+  std::vector<FermionAction *> Denominators;
+  std::vector<TwoFlavourEvenOddRatioPseudoFermionAction<FermionImplPolicy> *> Quotients;
+  std::vector<OneFlavourEvenOddRatioRationalPseudoFermionAction<FermionImplPolicy> *> Quotients2;
+
+  // Untwisted, target mass
+  Denominators.push_back(new FermionAction(U, *GridPtr, *GridRBPtr, mass, 0, bc));
+  for(int h=0; h<n_hasenbusch; h++){
+    std::cout << GridLogMessage << " 2f quotient Action  "<< light_num[h] << " / " << light_den[h]<< std::endl;
+    Numerators.push_back  (new FermionAction(U, *GridPtr, *GridRBPtr, mass, hasenbusch[h], bc));
+    Denominators.push_back(new FermionAction(U, *GridPtr, *GridRBPtr, mass, hasenbusch[h], bc));
+  }
+  // Quenched PV mass to balance the fractions
+  Numerators.push_back(new FermionAction(U, *GridPtr, *GridRBPtr, pv_mass, 0, bc));
+
+  for (int h=0; h < n_hasenbusch + 1; h++) {
+    Quotients.push_back   (new TwoFlavourEvenOddRatioPseudoFermionAction<FermionImplPolicy>(*Numerators[h],*Denominators[h],CG,CG));
+    Quotients2.push_back   (new OneFlavourEvenOddRatioRationalPseudoFermionAction<FermionImplPolicy>(*Numerators[h],*Denominators[h],Params));
+  }
+
+  for(int h=0;h<n_hasenbusch+1;h++){
+    Level1.push_back(Quotients[h]);
+    Level1.push_back(Quotients2[h]);
+  }
+  Level2.push_back(&Waction);
+  
+  TheHMC.TheAction.push_back(Level1);
+  TheHMC.TheAction.push_back(Level2);
+
+  TheHMC.Parameters.MD.MDsteps = HMCParams.nsteps;
+  TheHMC.Parameters.MD.trajL = HMCParams.tlen;
+
+  TheHMC.ReadCommandLine(argc, argv);
+  TheHMC.Run();
+
+  Grid_finalize();
 }

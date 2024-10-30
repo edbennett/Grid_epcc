@@ -141,6 +141,9 @@ typedef WilsonTMFermion<WilsonImplD2> WilsonTMFermionD2;
 typedef WilsonTMFermion<WilsonImplF> WilsonTMFermionF;
 typedef WilsonTMFermion<WilsonImplD> WilsonTMFermionD;
 
+typedef WilsonTMFermion<SpWilsonImplD> SpWilsonTMFermionD;
+typedef WilsonTMFermion<SpWilsonTwoIndexAntiSymmetricImplD> SpWilsonTMTwoIndexAntiSymmetricFermionD;
+
 // Clover fermions
 template <typename WImpl> using WilsonClover = WilsonCloverFermion<WImpl, CloverHelpers<WImpl>>;
 template <typename WImpl> using WilsonExpClover = WilsonCloverFermion<WImpl, ExpCloverHelpers<WImpl>>;
